@@ -507,6 +507,8 @@ export class FlameChart {
     if (y + tooltipRect.height > window.innerHeight) {
       y = clientY - tooltipRect.height - offset;
     }
+    if (x < 0) x = offset;
+    if (y < 0) y = offset;
 
     this.tooltip.style.left = x + 'px';
     this.tooltip.style.top = y + 'px';

@@ -320,7 +320,7 @@ main {
 
 /* Detail tooltip */
 .chart-tooltip {
-  position: absolute;
+  position: fixed;
   pointer-events: none;
   background-color: rgba(22, 22, 26, 0.95);
   border: 1px solid var(--border-active);
