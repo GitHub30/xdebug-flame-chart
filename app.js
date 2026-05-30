@@ -1,7 +1,7 @@
-import { parseXdebugTrace } from './parser.js';
-import { generateSampleTrace } from './sample.js';
-import { FlameChart } from './flamechart.js';
-import { DetailsPanels } from './panels.js';
+import { parseXdebugTrace } from './parser.js?v=4';
+import { generateSampleTrace } from './sample.js?v=4';
+import { FlameChart } from './flamechart.js?v=4';
+import { DetailsPanels } from './panels.js?v=4';
 
 document.addEventListener('DOMContentLoaded', () => {
   // Initialize Core Components
@@ -11,9 +11,9 @@ document.addEventListener('DOMContentLoaded', () => {
     'overview-canvas',
     'chart-tooltip'
   );
-  
+
   const detailsPanels = new DetailsPanels(flameChart);
-  
+
   // Link Flame Chart select callback to Details Panels
   flameChart.onSelectCall = (call) => {
     detailsPanels.showSummary(call);
@@ -24,16 +24,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const viewerView = document.getElementById('viewer-view');
   const statsBar = document.getElementById('stats-bar');
   const dragOverlay = document.getElementById('drag-overlay');
-  
+
   // Uploader elements
   const fileInputHeader = document.getElementById('file-input');
   const fileInputWelcome = document.getElementById('file-input-welcome');
-  
+
   // Action buttons
   const btnLoadSampleWelcome = document.getElementById('btn-load-sample');
   const btnLoadSampleHeader = document.getElementById('header-load-sample');
   const btnResetZoom = document.getElementById('btn-reset-zoom');
-  
+
   // Search inputs
   const searchInput = document.getElementById('search-input');
   const searchPrev = document.getElementById('search-prev');
@@ -43,23 +43,23 @@ document.addEventListener('DOMContentLoaded', () => {
   function loadTraceData(filename, fileContent) {
     try {
       const parsedData = parseXdebugTrace(fileContent);
-      
+
       // Update UI panels
       flameChart.setData(parsedData);
       detailsPanels.setData(parsedData);
-      
+
       // Render Stats
       document.getElementById('stat-filename').textContent = filename;
       document.getElementById('stat-calls').textContent = parsedData.totalCallsCount.toLocaleString();
       document.getElementById('stat-duration').textContent = `${parsedData.duration.toFixed(2)} ms`;
       document.getElementById('stat-depth').textContent = parsedData.maxDepth;
       document.getElementById('stat-parsetime').textContent = `${parsedData.parseDurationMs.toFixed(1)} ms`;
-      
+
       // Toggle Views
       welcomeView.style.display = 'none';
       viewerView.style.display = 'flex';
       statsBar.style.display = 'flex';
-      
+
       // Resize canvases immediately to fit containers
       flameChart.resize();
     } catch (err) {
@@ -84,7 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
   fileInputHeader.addEventListener('change', (e) => {
     handleUploadedFile(e.target.files[0]);
   });
-  
+
   fileInputWelcome.addEventListener('change', (e) => {
     handleUploadedFile(e.target.files[0]);
   });
@@ -107,7 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
   searchInput.addEventListener('input', (e) => {
     flameChart.setSearchQuery(e.target.value);
   });
-  
+
   searchInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
       if (e.shiftKey) {
@@ -140,7 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // --- DRAG & DROP HANDLING ---
-  
+
   let dragCounter = 0; // prevent premature dragleave triggers on inner elements
 
   window.addEventListener('dragenter', (e) => {
@@ -165,45 +165,9 @@ document.addEventListener('DOMContentLoaded', () => {
     e.preventDefault();
     dragCounter = 0;
     dragOverlay.classList.remove('active');
-    
+
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       handleUploadedFile(e.dataTransfer.files[0]);
     }
   });
-
-  // --- SPLIT PANE RESIZER ---
-  const paneResizer = document.getElementById('pane-resizer');
-  const chartPane = document.querySelector('.chart-pane');
-  
-  if (paneResizer && chartPane) {
-    let isResizing = false;
-    let startY = 0;
-    let startHeight = 0;
-    
-    paneResizer.addEventListener('mousedown', (e) => {
-      isResizing = true;
-      startY = e.clientY;
-      startHeight = chartPane.getBoundingClientRect().height;
-      paneResizer.classList.add('active');
-      document.body.style.cursor = 'row-resize';
-      document.body.style.userSelect = 'none';
-    });
-    
-    document.addEventListener('mousemove', (e) => {
-      if (!isResizing) return;
-      const dy = e.clientY - startY;
-      const newHeight = Math.max(150, startHeight + dy); // Keep min height of 150px
-      chartPane.style.height = `${newHeight}px`;
-      chartPane.style.flex = 'none';
-      flameChart.resize();
-    });
-    
-    document.addEventListener('mouseup', () => {
-      if (!isResizing) return;
-      isResizing = false;
-      paneResizer.classList.remove('active');
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-    });
-  }
 });

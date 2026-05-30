@@ -598,20 +598,8 @@ export class FlameChart {
 
     const viewDuration = this.viewEnd - this.viewStart;
 
-    // Optimization: binary search the first call that might be visible on screen
-    // Calls are sorted by startTime, so we can binary search.
+    // Start rendering from the first call. The loop will break early once call.startTime > viewEnd.
     let startIndex = 0;
-    let low = 0;
-    let high = this.calls.length - 1;
-    while (low <= high) {
-      const mid = Math.floor((low + high) / 2);
-      if (this.calls[mid].endTime < this.viewStart) {
-        startIndex = mid;
-        low = mid + 1;
-      } else {
-        high = mid - 1;
-      }
-    }
 
     this.ctx.font = '10px var(--font-sans)';
     this.ctx.textBaseline = 'middle';

@@ -1,4 +1,4 @@
-import { formatBytes, escapeHTML, getFilenameBase } from './flamechart.js';
+import { formatBytes, escapeHTML, getFilenameBase } from './flamechart.js?v=4';
 
 export class DetailsPanels {
   constructor(flameChart) {

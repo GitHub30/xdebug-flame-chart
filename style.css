@@ -210,24 +210,8 @@ main {
   flex-direction: column;
   border-bottom: 1px solid var(--border-color);
   background-color: var(--bg-primary);
-  min-height: 300px;
-  flex: 4;
-}
-
-.resizer {
-  height: 8px;
-  background-color: var(--bg-tertiary);
-  border-top: 1px solid var(--border-color);
-  border-bottom: 1px solid var(--border-color);
-  cursor: row-resize;
-  position: relative;
-  z-index: 15;
-  user-select: none;
-  transition: background-color 0.2s ease;
-}
-
-.resizer:hover, .resizer.active {
-  background-color: var(--accent-color);
+  min-height: 200px;
+  flex: 3;
 }
 
 /* Toolbar below / above canvas */
