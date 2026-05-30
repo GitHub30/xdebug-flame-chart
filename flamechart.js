@@ -38,6 +38,7 @@ export class FlameChart {
     this.dragStartY = 0;
     this.dragStartViewStart = 0;
     this.dragStartLevelOffset = 0;
+    this.dragDirection = null;
 
     // Search states
     this.searchQuery = '';
@@ -220,6 +221,7 @@ export class FlameChart {
       this.dragStartY = y;
       this.dragStartViewStart = this.viewStart;
       this.dragStartLevelOffset = this.levelOffset;
+      this.dragDirection = null;
 
       const call = this.findCallAt(x, y);
       if (call) {
@@ -239,19 +241,36 @@ export class FlameChart {
         const dx = x - this.dragStartX;
         const dy = y - this.dragStartY;
 
-        // Panning horizontally (adjust viewStart & viewEnd)
-        const dTime = this.xToTime(this.dragStartX) - this.xToTime(x);
-        const viewDuration = this.viewEnd - this.viewStart;
+        // Lock drag direction after moving 5px
+        if (this.dragDirection === null) {
+          const dist = Math.hypot(dx, dy);
+          if (dist > 5) {
+            if (Math.abs(dx) > Math.abs(dy)) {
+              this.dragDirection = 'horizontal';
+            } else {
+              this.dragDirection = 'vertical';
+            }
+          }
+        }
 
-        this.viewStart = Math.max(0, Math.min(this.duration - viewDuration, this.dragStartViewStart + dTime));
-        this.viewEnd = this.viewStart + viewDuration;
+        if (this.dragDirection === 'horizontal') {
+          // Panning horizontally (adjust viewStart & viewEnd)
+          const dTime = this.xToTime(this.dragStartX) - this.xToTime(x);
+          const viewDuration = this.viewEnd - this.viewStart;
 
-        // Panning vertically (adjust levelOffset)
-        const dLevels = Math.round(dy / (this.barHeight + this.barSpacing));
-        this.levelOffset = Math.max(0, Math.min(this.maxDepth - 2, this.dragStartLevelOffset - dLevels));
-
-        this.updateTooltip(null, 0, 0);
-        this.render();
+          this.viewStart = Math.max(0, Math.min(this.duration - viewDuration, this.dragStartViewStart + dTime));
+          this.viewEnd = this.viewStart + viewDuration;
+          
+          this.updateTooltip(null, 0, 0);
+          this.render();
+        } else if (this.dragDirection === 'vertical') {
+          // Panning vertically (adjust levelOffset)
+          const dLevels = Math.round(dy / (this.barHeight + this.barSpacing));
+          this.levelOffset = Math.max(0, Math.min(this.maxDepth - 2, this.dragStartLevelOffset - dLevels));
+          
+          this.updateTooltip(null, 0, 0);
+          this.render();
+        }
       } else {
         const call = this.findCallAt(x, y);
         if (call !== this.hoveredCall) {
