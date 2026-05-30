@@ -679,13 +679,14 @@ export class FlameChart {
       }
 
       // Draw text label
-      if (barW > 25) {
+      const visibleW = Math.min(width, x2) - Math.max(0, x1);
+      if (visibleW > 25) {
         this.ctx.fillStyle = '#ffffff';
         // Check if dark or light background to alter text contrast if needed, HSL works well with white text
 
         let label = call.name;
-        // Truncate text if it doesn't fit
-        const textLimit = barW - 8;
+        // Truncate text if it doesn't fit in the visible portion
+        const textLimit = visibleW - 8;
         let textWidth = this.ctx.measureText(label).width;
 
         if (textWidth > textLimit) {
@@ -698,7 +699,8 @@ export class FlameChart {
         }
 
         if (label.length > 3) {
-          this.ctx.fillText(label, x1 + 4, y + this.barHeight / 2);
+          const textX = Math.max(0, x1) + 4;
+          this.ctx.fillText(label, textX, y + this.barHeight / 2);
         }
       }
     }
