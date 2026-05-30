@@ -211,7 +211,7 @@ main {
   border-bottom: 1px solid var(--border-color);
   background-color: var(--bg-primary);
   min-height: 200px;
-  flex: 3;
+  flex: 4;
 }
 
 /* Toolbar below / above canvas */
@@ -360,12 +360,27 @@ main {
   word-break: break-all;
 }
 
+/* Resizer between panels */
+.pane-resizer {
+  height: 6px;
+  background-color: var(--border-color);
+  cursor: row-resize;
+  z-index: 10;
+  transition: background-color 0.2s ease;
+  display: none; /* Hidden by default */
+}
+
+.pane-resizer:hover,
+.pane-resizer.active {
+  background-color: var(--accent-color);
+}
+
 /* Lower Panel: DevTools Details Panel */
 .details-pane {
   flex: 2;
   min-height: 150px;
   background-color: var(--bg-secondary);
-  display: flex;
+  display: none; /* Hidden by default */
   flex-direction: column;
   overflow: hidden;
 }

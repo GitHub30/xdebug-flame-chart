@@ -228,6 +228,10 @@ export class FlameChart {
         this.selectedCall = call;
         this.render();
         if (this.onSelectCall) this.onSelectCall(call);
+      } else {
+        this.selectedCall = null;
+        this.render();
+        if (this.onSelectCall) this.onSelectCall(null);
       }
     });
 
@@ -441,7 +445,9 @@ export class FlameChart {
     this.viewStart = 0;
     this.viewEnd = this.duration;
     this.levelOffset = 0;
+    this.selectedCall = null;
     this.render();
+    if (this.onSelectCall) this.onSelectCall(null);
   }
 
   zoomToCall(call) {

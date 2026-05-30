@@ -14,16 +14,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const detailsPanels = new DetailsPanels(flameChart);
 
-  // Link Flame Chart select callback to Details Panels
-  flameChart.onSelectCall = (call) => {
-    detailsPanels.showSummary(call);
-  };
-
-  // UI elements
+  // UI elements & Resizing states
   const welcomeView = document.getElementById('welcome-view');
   const viewerView = document.getElementById('viewer-view');
   const statsBar = document.getElementById('stats-bar');
   const dragOverlay = document.getElementById('drag-overlay');
+
+  const chartPane = document.querySelector('.chart-pane');
+  const detailsPane = document.querySelector('.details-pane');
+  const paneResizer = document.getElementById('pane-resizer');
+
+  let lastDraggedHeight = null;
+  let isResizing = false;
+
+  // Link Flame Chart select callback to Details Panels
+  flameChart.onSelectCall = (call) => {
+    if (call) {
+      detailsPane.style.display = 'flex';
+      paneResizer.style.display = 'block';
+      detailsPanels.showSummary(call);
+
+      if (lastDraggedHeight !== null) {
+        chartPane.style.height = `${lastDraggedHeight}px`;
+        chartPane.style.flex = 'none';
+      }
+    } else {
+      detailsPane.style.display = 'none';
+      paneResizer.style.display = 'none';
+
+      chartPane.style.height = '';
+      chartPane.style.flex = '';
+    }
+    flameChart.resize();
+  };
 
   // Uploader elements
   const fileInputHeader = document.getElementById('file-input');
@@ -43,6 +66,12 @@ document.addEventListener('DOMContentLoaded', () => {
   function loadTraceData(filename, fileContent) {
     try {
       const parsedData = parseXdebugTrace(fileContent);
+
+      // Reset layout and heights
+      lastDraggedHeight = null;
+      if (flameChart.onSelectCall) {
+        flameChart.onSelectCall(null);
+      }
 
       // Update UI panels
       flameChart.setData(parsedData);
@@ -128,6 +157,48 @@ document.addEventListener('DOMContentLoaded', () => {
 
   searchNext.addEventListener('click', () => {
     flameChart.nextSearchResult();
+  });
+
+  // Pane Resizing Drag Events
+  paneResizer.addEventListener('mousedown', (e) => {
+    isResizing = true;
+    paneResizer.classList.add('active');
+    document.body.style.cursor = 'row-resize';
+    e.preventDefault();
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    if (!isResizing) return;
+
+    const containerRect = viewerView.getBoundingClientRect();
+    const relativeY = e.clientY - containerRect.top;
+
+    const minChartHeight = 200;
+    const minDetailsHeight = 150;
+    const resizerHeight = 6;
+    const totalHeight = containerRect.height - resizerHeight;
+
+    let newChartHeight = relativeY;
+    if (newChartHeight < minChartHeight) {
+      newChartHeight = minChartHeight;
+    }
+    if (totalHeight - newChartHeight < minDetailsHeight) {
+      newChartHeight = totalHeight - minDetailsHeight;
+    }
+
+    chartPane.style.height = `${newChartHeight}px`;
+    chartPane.style.flex = 'none';
+    lastDraggedHeight = newChartHeight;
+
+    flameChart.resize();
+  });
+
+  window.addEventListener('mouseup', () => {
+    if (isResizing) {
+      isResizing = false;
+      paneResizer.classList.remove('active');
+      document.body.style.cursor = '';
+    }
   });
 
   // Global Hotkeys (Ctrl+F or Cmd+F to focus search)
