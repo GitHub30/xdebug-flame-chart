@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Xdebug Flame Chart Viewer</title>
+  <meta name="description" content="An interactive web-based flame chart viewer for Xdebug computerized trace files (.xt).">
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body class="dark-theme">
+
+  <!-- Header -->
+  <header>
+    <div class="logo-section">
+      <h1>Xdebug Flame Chart Viewer</h1>
+      <span class="logo-badge">Computerized format v1</span>
+    </div>
+    
+    <!-- File Statistics shown when trace is active -->
+    <div class="stats-bar" id="stats-bar" style="display: none;">
+      <div class="stat-item">
+        <span class="stat-label">File Name</span>
+        <span class="stat-val" id="stat-filename">-</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Total Calls</span>
+        <span class="stat-val" id="stat-calls">-</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Duration</span>
+        <span class="stat-val" id="stat-duration">-</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Max Depth</span>
+        <span class="stat-val" id="stat-depth">-</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Parse Time</span>
+        <span class="stat-val" id="stat-parsetime">-</span>
+      </div>
+    </div>
+
+    <div class="action-section">
+      <button class="btn" id="header-load-sample">Load Sample</button>
+      <label for="file-input" class="btn btn-primary">
+        Choose .xt File
+      </label>
+      <input type="file" id="file-input" accept=".xt,.txt,.log">
+    </div>
+  </header>
+
+  <!-- Drag & Drop overlay -->
+  <div class="drag-overlay" id="drag-overlay">
+    <div class="drag-box">
+      <div class="welcome-logo">📂</div>
+      <h2>Drop your Xdebug Trace file here</h2>
+      <p>Supports computerized trace format (trace_format = 1)</p>
+    </div>
+  </div>
+
+  <!-- Main Viewport -->
+  <main>
+    <!-- Welcome / Upload View -->
+    <div class="welcome-container" id="welcome-view">
+      <div class="welcome-logo">🔥</div>
+      <h2 class="welcome-title">Visualize your PHP performance</h2>
+      <p class="welcome-desc">
+        Drag and drop an Xdebug computerized trace file (<code>.xt</code>) here, or load a sample trace to explore the features.
+      </p>
+      <div style="display: flex; gap: 12px; margin-top: 10px;">
+        <button class="btn btn-primary" id="btn-load-sample">Load Sample Trace</button>
+        <label for="file-input-welcome" class="btn">
+          Select .xt File
+        </label>
+        <input type="file" id="file-input-welcome" accept=".xt,.txt,.log">
+      </div>
+      <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 15px;">
+        Make sure your trace is generated with <code>xdebug.trace_format = 1</code>.
+      </p>
+    </div>
+
+    <!-- Viewer View (hidden until file loaded) -->
+    <div class="viewer-container" id="viewer-view" style="display: none;">
+      
+      <!-- Upper Section: Timeline overview and Main Flame Chart -->
+      <div class="chart-pane">
+        
+        <!-- Timeline Overview Minimap -->
+        <div class="overview-container" id="overview-container" title="Drag handles or brush to select a time window">
+          <canvas id="overview-canvas"></canvas>
+        </div>
+
+        <!-- Toolbar controls -->
+        <div class="toolbar">
+          <div class="toolbar-controls">
+            <span>Scroll to zoom, Drag to pan. Double-click to reset view.</span>
+          </div>
+          
+          <div class="toolbar-controls">
+            <!-- Search field -->
+            <div class="search-wrapper">
+              <input type="text" class="search-input" id="search-input" placeholder="Search functions (Ctrl+F)..." autocomplete="off">
+              <span class="search-info" id="search-count">0/0</span>
+              <button class="search-btn" id="search-prev" title="Previous match (Shift+Enter)">▲</button>
+              <button class="search-btn" id="search-next" title="Next match (Enter)">▼</button>
+            </div>
+            <span id="search-duration" style="font-size: 0.8rem; color: var(--text-secondary); display: none; margin-right: 12px; font-weight: 500;"></span>
+            <button class="btn" id="btn-reset-zoom" style="padding: 4px 8px;">Reset View</button>
+          </div>
+        </div>
+
+        <!-- Main Flame Chart Canvas container -->
+        <div class="flamechart-container" id="flamechart-container">
+          <canvas id="flamechart-canvas"></canvas>
+          <div class="chart-tooltip" id="chart-tooltip"></div>
+        </div>
+      </div>
+
+      <!-- Lower Section: Bottom tab panels (Summary, Bottom-Up, Call Tree, Event Log) -->
+      <div class="details-pane">
+        <div class="tabs-header">
+          <button class="tab-btn active" data-tab="tab-summary">Summary</button>
+          <button class="tab-btn" data-tab="tab-bottomup">Bottom-Up</button>
+          <button class="tab-btn" data-tab="tab-calltree">Call Tree</button>
+          <button class="tab-btn" data-tab="tab-eventlog">Event Log</button>
+        </div>
+        
+        <div class="tabs-content">
+          <!-- Summary Tab -->
+          <div class="tab-pane active" id="tab-summary">
+            <div class="summary-empty-state" id="summary-empty">
+              Select a bar in the flame chart to view execution details.
+            </div>
+            <div class="summary-grid" id="summary-content" style="display: none;">
+              <div class="summary-card">
+                <h3>Function Information</h3>
+                <div class="summary-line">
+                  <span class="summary-label">Function Name</span>
+                  <span class="summary-value" id="sum-func-name" style="font-weight: 600; color: #60a5fa;">-</span>
+                </div>
+                <div class="summary-line">
+                  <span class="summary-label">Nesting Depth</span>
+                  <span class="summary-value" id="sum-func-level">-</span>
+                </div>
+                <div class="summary-line">
+                  <span class="summary-label">Type</span>
+                  <span class="summary-value" id="sum-func-type">-</span>
+                </div>
+              </div>
+              
+              <div class="summary-card">
+                <h3>Timing &amp; Performance</h3>
+                <div class="summary-line">
+                  <span class="summary-label">Total Time (Inclusive)</span>
+                  <span class="summary-value" id="sum-time-inclusive">-</span>
+                </div>
+                <div class="summary-line">
+                  <span class="summary-label">Self Time (Exclusive)</span>
+                  <span class="summary-value" id="sum-time-exclusive">-</span>
+                </div>
+                <div class="summary-line">
+                  <span class="summary-label">Start Time</span>
+                  <span class="summary-value" id="sum-time-start">-</span>
+                </div>
+                <div class="summary-line">
+                  <span class="summary-label">End Time</span>
+                  <span class="summary-value" id="sum-time-end">-</span>
+                </div>
+              </div>
+
+              <div class="summary-card">
+                <h3>Memory Usage</h3>
+                <div class="summary-line">
+                  <span class="summary-label">Memory Delta</span>
+                  <span class="summary-value" id="sum-mem-delta">-</span>
+                </div>
+                <div class="summary-line">
+                  <span class="summary-label">Start Memory</span>
+                  <span class="summary-value" id="sum-mem-start">-</span>
+                </div>
+                <div class="summary-line">
+                  <span class="summary-label">End Memory</span>
+                  <span class="summary-value" id="sum-mem-end">-</span>
+                </div>
+              </div>
+
+              <div class="summary-card" style="grid-column: span 2;">
+                <h3>Location &amp; Arguments</h3>
+                <div class="summary-line">
+                  <span class="summary-label">Defined File</span>
+                  <span class="summary-value" id="sum-file" style="word-break: break-all; font-size: 0.75rem;">-</span>
+                </div>
+                <div class="summary-line">
+                  <span class="summary-label">Line Number</span>
+                  <span class="summary-value" id="sum-line">-</span>
+                </div>
+                <div class="summary-line">
+                  <span class="summary-label">Arguments</span>
+                  <span class="summary-value" id="sum-args" style="max-height: 80px; overflow-y: auto; text-align: left; font-size: 0.75rem;">-</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom-Up Tab -->
+          <div class="tab-pane" id="tab-bottomup">
+            <div class="table-container">
+              <table class="grid-table" id="bottomup-table">
+                <thead>
+                  <tr>
+                    <th class="sortable" data-sort="name">Function Name</th>
+                    <th class="numeric sortable" data-sort="calls">Calls</th>
+                    <th class="numeric sortable" data-sort="self">Self Time (ms)</th>
+                    <th class="numeric sortable" data-sort="selfPct">Self Time %</th>
+                    <th class="numeric sortable active" data-sort="total">Total Time (ms)</th>
+                    <th class="numeric sortable" data-sort="totalPct">Total Time %</th>
+                    <th class="numeric sortable" data-sort="mem">Memory Delta</th>
+                  </tr>
+                </thead>
+                <tbody id="bottomup-list">
+                  <!-- Generated dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Call Tree Tab -->
+          <div class="tab-pane" id="tab-calltree">
+            <div class="table-container">
+              <table class="grid-table" id="calltree-table">
+                <thead>
+                  <tr>
+                    <th>Function Hierarchy</th>
+                    <th class="numeric">Total Time (ms)</th>
+                    <th class="numeric">Total %</th>
+                    <th class="numeric">Self Time (ms)</th>
+                    <th class="numeric">Self %</th>
+                    <th class="numeric">Memory Delta</th>
+                    <th>File:Line</th>
+                  </tr>
+                </thead>
+                <tbody id="calltree-list">
+                  <!-- Generated dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Event Log Tab -->
+          <div class="tab-pane" id="tab-eventlog">
+            <div class="filter-bar">
+              <input type="text" class="filter-input" id="eventlog-filter" placeholder="Filter events by function name or file...">
+              <input type="number" class="filter-input" id="eventlog-min-duration" placeholder="Min duration (ms)" style="max-width: 150px;">
+            </div>
+            <div class="table-container">
+              <table class="grid-table" id="eventlog-table">
+                <thead>
+                  <tr>
+                    <th class="sortable" data-sort="start">Start Time (ms)</th>
+                    <th class="sortable" data-sort="duration">Duration (ms)</th>
+                    <th class="sortable" data-sort="level">Level</th>
+                    <th class="sortable" data-sort="name">Function</th>
+                    <th class="sortable" data-sort="mem">Memory Delta</th>
+                    <th class="sortable" data-sort="file">File:Line</th>
+                  </tr>
+                </thead>
+                <tbody id="eventlog-list">
+                  <!-- Generated dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Script Modules -->
+  <script type="module" src="app.js"></script>
+</body>
+</html>
