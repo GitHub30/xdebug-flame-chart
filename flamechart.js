@@ -433,9 +433,13 @@ export class FlameChart {
     
     // Scroll level into view
     const viewHeight = this.canvas.height / (window.devicePixelRatio || 1);
-    const maxVisibleLevels = Math.floor((viewHeight - this.paddingTop) / (this.barHeight + this.barSpacing));
-    if (call.level - 1 < this.levelOffset || call.level > this.levelOffset + maxVisibleLevels) {
-      this.levelOffset = Math.max(0, call.level - Math.floor(maxVisibleLevels / 2));
+    const maxVisibleLevels = Math.max(1, Math.floor((viewHeight - this.paddingTop) / (this.barHeight + this.barSpacing)));
+    if (call.level - 1 < this.levelOffset) {
+      // Scroll up just enough to put the node at the top row of the viewport
+      this.levelOffset = Math.max(0, call.level - 1);
+    } else if (call.level > this.levelOffset + maxVisibleLevels) {
+      // Scroll down just enough to put the node at the bottom row of the viewport (keeping parents visible)
+      this.levelOffset = Math.max(0, call.level - maxVisibleLevels);
     }
     
     this.selectedCall = call;
