@@ -170,4 +170,40 @@ document.addEventListener('DOMContentLoaded', () => {
       handleUploadedFile(e.dataTransfer.files[0]);
     }
   });
+
+  // --- SPLIT PANE RESIZER ---
+  const paneResizer = document.getElementById('pane-resizer');
+  const chartPane = document.querySelector('.chart-pane');
+  
+  if (paneResizer && chartPane) {
+    let isResizing = false;
+    let startY = 0;
+    let startHeight = 0;
+    
+    paneResizer.addEventListener('mousedown', (e) => {
+      isResizing = true;
+      startY = e.clientY;
+      startHeight = chartPane.getBoundingClientRect().height;
+      paneResizer.classList.add('active');
+      document.body.style.cursor = 'row-resize';
+      document.body.style.userSelect = 'none';
+    });
+    
+    document.addEventListener('mousemove', (e) => {
+      if (!isResizing) return;
+      const dy = e.clientY - startY;
+      const newHeight = Math.max(150, startHeight + dy); // Keep min height of 150px
+      chartPane.style.height = `${newHeight}px`;
+      chartPane.style.flex = 'none';
+      flameChart.resize();
+    });
+    
+    document.addEventListener('mouseup', () => {
+      if (!isResizing) return;
+      isResizing = false;
+      paneResizer.classList.remove('active');
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    });
+  }
 });
