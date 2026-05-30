@@ -210,8 +210,8 @@ main {
   flex-direction: column;
   border-bottom: 1px solid var(--border-color);
   background-color: var(--bg-primary);
-  min-height: 200px;
-  flex: 3;
+  min-height: 300px;
+  flex: 4;
 }
 
 /* Toolbar below / above canvas */
