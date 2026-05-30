@@ -97,14 +97,55 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // Helper to decompress Gzip format using native DecompressionStream
+  async function decompressGzip(arrayBuffer) {
+    const ds = new DecompressionStream('gzip');
+    const decompressedStream = new Response(arrayBuffer).body.pipeThrough(ds);
+    const blob = await new Response(decompressedStream).blob();
+    return await blob.text();
+  }
+
+  // Helper to decompress XZ format using xz-decompress library
+  async function decompressXz(arrayBuffer) {
+    const XzReadableStream = window['xz-decompress']?.XzReadableStream;
+    if (!XzReadableStream) {
+      throw new Error('XZ decompression library is not loaded. Please check your internet connection.');
+    }
+    const stream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(new Uint8Array(arrayBuffer));
+        controller.close();
+      }
+    });
+    const decompressedStream = new XzReadableStream(stream);
+    const blob = await new Response(decompressedStream).blob();
+    return await blob.text();
+  }
+
   // File Reader helper
   function handleUploadedFile(file) {
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (e) => {
-      loadTraceData(file.name, e.target.result);
+    reader.onload = async (e) => {
+      const arrayBuffer = e.target.result;
+      const lowercaseName = file.name.toLowerCase();
+      try {
+        let textContent;
+        if (lowercaseName.endsWith('.gz')) {
+          textContent = await decompressGzip(arrayBuffer);
+        } else if (lowercaseName.endsWith('.xz')) {
+          textContent = await decompressXz(arrayBuffer);
+        } else {
+          // Plain text files
+          textContent = new TextDecoder('utf-8').decode(arrayBuffer);
+        }
+        loadTraceData(file.name, textContent);
+      } catch (err) {
+        console.error(err);
+        alert('Decompression failed: ' + err.message);
+      }
     };
-    reader.readAsText(file);
+    reader.readAsArrayBuffer(file);
   }
 
   // --- EVENT LISTENERS ---

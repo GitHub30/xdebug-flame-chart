@@ -13,6 +13,7 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
     rel="stylesheet">
+  <script src="https://unpkg.com/xz-decompress@0.2.3/dist/package/xz-decompress.js"></script>
 </head>
 
 <body class="dark-theme">
@@ -53,7 +54,7 @@
       <label for="file-input" class="btn btn-primary">
         Choose .xt File
       </label>
-      <input type="file" id="file-input" accept=".xt,.txt,.log">
+      <input type="file" id="file-input" accept=".xt,.txt,.log,.gz,.xz">
     </div>
   </header>
 
@@ -73,15 +74,24 @@
       <div class="welcome-logo">🔥</div>
       <h2 class="welcome-title">Visualize your PHP performance</h2>
       <p class="welcome-desc">
-        Drag and drop an Xdebug computerized trace file (<code>.xt</code>) here, or load a sample trace to explore the
-        features.
+        Drag and drop an Xdebug computerized trace file (<code>.xt</code>, <code>.gz</code>, <code>.xz</code>) here, or load a sample trace.
       </p>
+      
+      <!-- Sample compression commands info -->
+      <div class="compress-info">
+        <p>You can compress large trace files to load them faster:</p>
+        <div class="command-box">
+          <code>gzip trace.xt</code>
+          <code>xz trace.xt</code>
+        </div>
+      </div>
+
       <div style="display: flex; gap: 12px; margin-top: 10px;">
         <button class="btn btn-primary" id="btn-load-sample">Load Sample Trace</button>
         <label for="file-input-welcome" class="btn">
-          Select .xt File
+          Select File
         </label>
-        <input type="file" id="file-input-welcome" accept=".xt,.txt,.log">
+        <input type="file" id="file-input-welcome" accept=".xt,.txt,.log,.gz,.xz">
       </div>
       <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 15px;">
         Make sure your trace is generated with <code>xdebug.trace_format = 1</code>.
